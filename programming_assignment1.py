@@ -397,10 +397,10 @@ def take_action(action: str, cur_state: tuple[int, int, int]):
 def DFS_BB_v2(maze: list[list[int]], startstate:tuple[int, int, int], goal, h, bound_max=2**32):
     """
     Performs a depth-first search with branch and bound to find the shortest path from the flea to the goal.
-    This version abstracts away cost from the state and tracks it seperately, and simplifies the graph to .
+    This version abstracts away state into a unique integer and tracks it seperately, while also avoiding cycles.
     """
     class Graph:
-        nodes = dict() # graph: set[State] 
+        nodes = dict() # graph: set[State]
 
         def __init__(self):
             pass
@@ -414,16 +414,16 @@ def DFS_BB_v2(maze: list[list[int]], startstate:tuple[int, int, int], goal, h, b
 
         def getStateFromID(self, id:int):
             return self.nodes.get(id)
-        
+
         """these are kind of useless"""
         def getCostFromID(self, id:int):
             return self.nodes.get(id)[-1]
-        
+
         def getPosFromID(self, id:int):
             return self.nodes.get(id)[:2]
-        
+
     def isCycle_v1(path: list[int], *args) -> bool:
-        visited = set()   # visited is a hash of positions
+        visited = set()   # visited is a set of hashes
         for st in path:
             #print(st)
             h = hash(gra.getPosFromID(st))
@@ -439,11 +439,11 @@ def DFS_BB_v2(maze: list[list[int]], startstate:tuple[int, int, int], goal, h, b
                 return True
             else:
                 visited.add(h)
-        
+
         return False
-    
+
     def isCycle_v2(path: list[int], *args) -> bool:
-        visited = set()   # visited is a set of positions
+        visited = set()   # visited is a set of positions, less efficient
         for st in path:
             #print(st)
             st = gra.getPosFromID(st)
@@ -459,32 +459,19 @@ def DFS_BB_v2(maze: list[list[int]], startstate:tuple[int, int, int], goal, h, b
                 return True
             else:
                 visited.add(st)
-
-    global best_path
-    global bound 
-    global steps 
-    global gra
-    global max_len_path
 
     bound = bound_max
     best_path = None
     steps = 0
-    max_len_path = 0
-    gra = Graph()    
+    gra = Graph()
 
-    
 
     def cbsearch(path: list[int]):
-        global bound
-        global best_path
-        global steps
-        global gra
-        global max_len_path
+        nonlocal bound
+        nonlocal best_path
+        nonlocal steps
+        nonlocal gra
 
-        l = len(path)
-        if (l > max_len_path):
-            print("Path is now currently: ", l)
-            max_len_path = l
         cur_node = gra.getStateFromID(path[-1])
 
         if (cur_node[2] + h(cur_node)) < bound:      # cost(path) + h(cur_node)) < bound, but... cost of the path is just the total cost... that's already part of the state
@@ -498,20 +485,22 @@ def DFS_BB_v2(maze: list[list[int]], startstate:tuple[int, int, int], goal, h, b
                         continue            # this action causes it to become a cycle, so avoid this.
                     newpath = copy(path)
                     newpath.append(gra.putStateInGraph(take_action(ac, cur_node)))
-                    
+
                     cbsearch(newpath)
-        
+
         steps+=1
 
     cbsearch([gra.putStateInGraph(startstate)])
-    print(gra.nodes)
-    print("Steps: ", steps)
+    #print(gra.nodes)
+    print("Recursive call depth: ", steps)
 
     # best_path is a list of hashes, we need to turn them back into states.
     returnpath = []
+    if (best_path is None):
+        return None
     for h in best_path:
         returnpath.append(gra.getStateFromID(h))
-    
+
     return returnpath    # this is guaranteed to be the smallest path through the maze.
 
 
@@ -671,7 +660,7 @@ def create_maze_from_image(path):
 
 
 def main():
-    path = "./csc425-ai/maze_wierd.png"
+    path = "./maze_edgecase.png"
     input1 = create_maze_from_image(path)
 
     #input1 = input2
@@ -714,8 +703,8 @@ def main():
     def h(state: tuple[int, int, int]):
         return abs(state[0]-goal_pos[0]) + abs(state[1]-goal_pos[1])    # Manhattan distance heuristic, will definitely be <cost(s) because sometimes an action may cost 2
 
-    shortest_path = DFS_BB_v2(maze, (flea_pos[0], flea_pos[1], 0), goal, h, bound_max=85)
-    #print(shortest_path)
+    shortest_path = DFS_BB_v2(maze, (flea_pos[0], flea_pos[1], 0), goal, h, bound_max=285)
+    print(shortest_path)
 
     #for ac in shortest_path:
     #    pprint_maze(maze, ac, goal=goal_pos)
