@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "austin",
+            "file": "programming_assignment2.py",
+            "args": ["--verbose"],
+            "label": "Profile Python code",
+        }
+    ]
+}
